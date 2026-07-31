@@ -125,10 +125,16 @@ export default function Threads({
 }: ThreadsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameId = useRef(0);
-  const propsRef = useRef({ color, amplitude, distance, enableMouseInteraction });
-  propsRef.current = { color, amplitude, distance, enableMouseInteraction };
+  const propsRef = useRef({
+    color,
+    amplitude,
+    distance,
+    enableMouseInteraction,
+  });
 
   useEffect(() => {
+    propsRef.current = { color, amplitude, distance, enableMouseInteraction };
+
     const container = containerRef.current;
     if (!container) return;
 
