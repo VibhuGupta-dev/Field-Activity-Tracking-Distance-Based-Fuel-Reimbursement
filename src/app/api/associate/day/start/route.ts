@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db/connect";
-import { getSession } from "@/lib/auth/getSession";
-import { geoPointSchema } from "@/lib/validation/geoPoint";
-import { toDateKeyIST } from "@/lib/date/dateKey";
-import DaySession from "@/models/DaySession";
+import { connectDB } from "@/src/lib/db/connect";
+import { getSession } from "@/src/lib/auth/getSession";
+import { geoPointSchema } from "@/src/lib/validation/geoPoint";
+import { toDateKeyIST } from "@/src/lib/date/dateKey";
+import DaySession from "@/src/models/Daysession";
 
 const startDaySchema = geoPointSchema;
 
