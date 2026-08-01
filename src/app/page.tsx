@@ -21,7 +21,7 @@ export default function HomePage() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/logo.png"
+              src="/logo1.png"
               alt="Field Tracker"
               width={480}
               height={100}
