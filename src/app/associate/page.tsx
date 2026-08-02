@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentLocation } from "@/src/lib/client/geolocation";
+import { AppShell } from "@/src/components/AppShell";
+import { RouteTimeline, type RoutePointView } from "@/src/components/RouteTimeline";
+import { StatusPill } from "@/src/components/StatusPill";
 
 interface Lead {
   _id: string;
@@ -24,6 +27,14 @@ interface DaySessionView {
   startTimestamp: string;
   endTimestamp: string | null;
   totalDistanceKm: number | null;
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function leadName(lead: ActivityItem["lead"]): string {
+  return typeof lead === "object" ? lead.name : "Lead visit";
 }
 
 export default function AssociateDashboard() {
@@ -132,7 +143,7 @@ export default function AssociateDashboard() {
         setError(data.message || "Could not log activity");
         return;
       }
-      setMessage("Activity logged");
+      setMessage("Visit logged");
       setNotes("");
       setSelectedLeadId("");
       await loadDay();
@@ -145,100 +156,103 @@ export default function AssociateDashboard() {
   };
 
   const isOpen = daySession?.status === "open";
+  const today = new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  const routePoints: RoutePointView[] = daySession
+    ? [
+        { key: "start", label: "Start", time: formatTime(daySession.startTimestamp), kind: "start" },
+        ...activities.map((a) => ({
+          key: a._id,
+          label: leadName(a.lead),
+          time: formatTime(a.timestamp),
+          kind: "activity" as const,
+        })),
+        ...(daySession.endTimestamp
+          ? [{ key: "end", label: "End", time: formatTime(daySession.endTimestamp), kind: "end" as const }]
+          : []),
+      ]
+    : [];
 
   return (
-    <div className="min-h-screen bg-black px-6 py-10 text-white sm:px-12">
-      <div className="mx-auto max-w-2xl">
-        <div className="flex items-center justify-between">
-          <h1 className="font-[family-name:var(--font-playfair)] text-[2rem] font-medium">
-            Your day
-          </h1>
-          <button
-            onClick={handleLogout}
-            className="text-[13px] text-neutral-400 transition hover:text-neutral-200"
-          >
-            Logout
-          </button>
-        </div>
+    <AppShell eyebrow="Field Log" onLogout={handleLogout}>
+      <p className="text-[13px] text-[var(--color-text-muted)]">{today}</p>
+      <h1 className="mt-1 font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
+        Your day
+      </h1>
 
-        {error && (
-          <p className="mt-4 rounded-lg border border-red-900 bg-red-950/40 px-4 py-2 text-[13px] text-red-400">
-            {error}
-          </p>
-        )}
-        {message && (
-          <p className="mt-4 rounded-lg border border-emerald-900 bg-emerald-950/40 px-4 py-2 text-[13px] text-emerald-400">
-            {message}
-          </p>
-        )}
+      {error && (
+        <p className="mt-4 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-2.5 text-[13px] text-[var(--color-danger)]">
+          {error}
+        </p>
+      )}
+      {message && (
+        <p className="mt-4 rounded-lg border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-4 py-2.5 text-[13px] text-[var(--color-success)]">
+          {message}
+        </p>
+      )}
 
-        {/* Status card */}
-        <div className="mt-6 rounded-2xl border border-neutral-800 p-5">
-          {!daySession && (
-            <>
-              <p className="text-[14px] text-neutral-400">
-                You haven&apos;t started your day yet.
+      {/* Status + route */}
+      <section className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+        {!daySession ? (
+          <div className="flex flex-col items-start gap-4">
+            <div>
+              <p className="text-[14px] font-medium text-[var(--color-text)]">
+                No visits logged yet today
               </p>
-              <button
-                onClick={handleStartDay}
-                disabled={busy}
-                className="mt-4 rounded-full bg-white px-6 py-2.5 text-[14px] font-medium text-black transition hover:bg-neutral-200 disabled:opacity-60"
-              >
-                {busy ? "Starting..." : "Start Day"}
-              </button>
-            </>
-          )}
-
-          {daySession && (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-neutral-400">
-                  Status:{" "}
-                  <span className={isOpen ? "text-emerald-400" : "text-neutral-300"}>
-                    {isOpen ? "In progress" : "Closed"}
-                  </span>
-                </span>
-                {daySession.totalDistanceKm !== null && (
-                  <span className="text-[13px] text-neutral-400">
-                    {daySession.totalDistanceKm} km
-                  </span>
-                )}
-              </div>
-              <p className="mt-2 text-[12px] text-neutral-500">
-                Started {new Date(daySession.startTimestamp).toLocaleTimeString()}
-                {daySession.endTimestamp &&
-                  ` · Ended ${new Date(daySession.endTimestamp).toLocaleTimeString()}`}
+              <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">
+                Start your day to begin tracking your route.
               </p>
-
+            </div>
+            <button
+              onClick={handleStartDay}
+              disabled={busy}
+              className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-[14px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
+            >
+              {busy ? "Starting…" : "Start day"}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <StatusPill status={daySession.status} />
               {isOpen && (
                 <button
                   onClick={handleEndDay}
                   disabled={busy}
-                  className="mt-4 rounded-full border border-neutral-700 px-6 py-2.5 text-[14px] font-medium text-white transition hover:border-neutral-500 disabled:opacity-60"
+                  className="rounded-full border border-[var(--color-border)] px-5 py-2 text-[13px] font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
                 >
-                  {busy ? "Ending..." : "End Day"}
+                  {busy ? "Ending…" : "End day"}
                 </button>
               )}
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* Add activity — sirf open day mein dikhta hai */}
-        {isOpen && (
-          <form
-            onSubmit={handleAddActivity}
-            className="mt-6 rounded-2xl border border-neutral-800 p-5"
-          >
-            <h2 className="text-[14px] font-medium text-neutral-200">Log a visit</h2>
+            <div className="mt-6">
+              <RouteTimeline points={routePoints} distanceKm={daySession.totalDistanceKm} />
+            </div>
+          </>
+        )}
+      </section>
 
-            <div className="mt-4">
-              <label className="mb-1.5 block text-[13px] font-medium text-neutral-300">
+      {/* Log a visit — only while day is open */}
+      {isOpen && (
+        <section className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+            Log a visit
+          </h2>
+
+          <form onSubmit={handleAddActivity} className="mt-4 space-y-4">
+            <div>
+              <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
                 Lead
               </label>
               <select
                 value={selectedLeadId}
                 onChange={(e) => setSelectedLeadId(e.target.value)}
-                className="w-full rounded-xl border border-neutral-700 bg-transparent px-4 py-3 text-[14px] text-white outline-none transition focus:border-neutral-500 [&>option]:bg-black"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-[14px] text-[var(--color-text)] outline-none transition focus:border-[var(--color-accent)] [&>option]:bg-[var(--color-surface-raised)]"
               >
                 <option value="">Select a lead</option>
                 {leads.map((lead) => (
@@ -249,67 +263,56 @@ export default function AssociateDashboard() {
               </select>
             </div>
 
-            <div className="mt-4">
-              <label className="mb-1.5 block text-[13px] font-medium text-neutral-300">
+            <div>
+              <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
                 Meeting notes
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                placeholder="What was discussed..."
-                className="w-full rounded-xl border border-neutral-700 bg-transparent px-4 py-3 text-[14px] text-white placeholder:text-neutral-600 outline-none transition focus:border-neutral-500"
+                placeholder="What was discussed…"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
               />
             </div>
 
             <button
               type="submit"
               disabled={busy}
-              className="mt-4 rounded-full bg-white px-6 py-2.5 text-[14px] font-medium text-black transition hover:bg-neutral-200 disabled:opacity-60"
+              className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-[14px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
             >
-              {busy ? "Logging..." : "Log Activity"}
+              {busy ? "Logging…" : "Log visit"}
             </button>
           </form>
-        )}
+        </section>
+      )}
 
-        {/* Timeline */}
-        <div className="mt-6">
-          <h2 className="text-[14px] font-medium text-neutral-200">Timeline</h2>
-          <ul className="mt-3 space-y-3">
-            {daySession && (
-              <li className="rounded-xl border border-neutral-800 px-4 py-3 text-[13px]">
-                <span className="text-neutral-400">Start · </span>
-                {new Date(daySession.startTimestamp).toLocaleTimeString()}
-              </li>
-            )}
+      {/* Visit log */}
+      {activities.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+            Visit log
+          </h2>
+          <ul className="mt-3 space-y-2.5">
             {activities.map((activity) => (
               <li
                 key={activity._id}
-                className="rounded-xl border border-neutral-800 px-4 py-3 text-[13px]"
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-neutral-200">
-                    {typeof activity.lead === "object" ? activity.lead.name : "Lead"}
+                  <span className="text-[13.5px] font-medium text-[var(--color-text)]">
+                    {leadName(activity.lead)}
                   </span>
-                  <span className="text-neutral-500">
-                    {new Date(activity.timestamp).toLocaleTimeString()}
+                  <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-[var(--color-text-muted)]">
+                    {formatTime(activity.timestamp)}
                   </span>
                 </div>
-                <p className="mt-1 text-neutral-400">{activity.notes}</p>
+                <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">{activity.notes}</p>
               </li>
             ))}
-            {daySession?.endTimestamp && (
-              <li className="rounded-xl border border-neutral-800 px-4 py-3 text-[13px]">
-                <span className="text-neutral-400">End · </span>
-                {new Date(daySession.endTimestamp).toLocaleTimeString()}
-              </li>
-            )}
-            {!daySession && (
-              <p className="text-[13px] text-neutral-500">No activity yet today.</p>
-            )}
           </ul>
-        </div>
-      </div>
-    </div>
+        </section>
+      )}
+    </AppShell>
   );
 }
