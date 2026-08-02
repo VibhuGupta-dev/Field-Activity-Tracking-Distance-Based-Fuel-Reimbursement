@@ -3,21 +3,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 const mongoUri = process.env.NEXT_MONGO_URI;
 
-export async function mongoconnect(
-  req: NextRequest,
-  res: NextResponse
-): Promise<NextResponse> {
+export async function mongoconnect(req: NextRequest): Promise<NextResponse> {
   try {
     if (!mongoUri) {
-      return res.status(500).json({ message: "MongoDB URI is not configured" });
+      return NextResponse.json(
+        { message: "MongoDB URI is not configured" },
+        { status: 500 }
+      );
     }
 
     await mongoose.connect(mongoUri);
     console.log("mongodb is running");
 
-    return res.status(200).json({ message: "MongoDB connected" });
+    return NextResponse.json({ message: "MongoDB connected" }, { status: 200 });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ message: "error in connection" });
+    return NextResponse.json({ message: "error in connection" }, { status: 500 });
   }
 }

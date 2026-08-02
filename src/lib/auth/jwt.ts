@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import type { UserRole } from "@/models/User";
+import type { UserRole } from "@/src/models/User";
 
 export interface AuthTokenPayload {
   userId: string;
