@@ -39,8 +39,7 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    // Sirf apni team mein search — kisi doosre branch-head ke associate
-    // ka naam match ho bhi jaye to wo yahan kabhi nahi aayega.
+  
     const matchedAssociates = await User.find({
       role: "sales-associate",
       reportsTo: session.userId,

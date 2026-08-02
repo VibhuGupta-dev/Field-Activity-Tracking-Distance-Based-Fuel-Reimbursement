@@ -18,12 +18,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Edge case: "two consecutive points are identical" — ORS rejects duplicate
- * back-to-back waypoints (poor GPS fix, ya activity logged turant Start Day
- * ke baad). Consecutive duplicates ko collapse kar dete hain before calling
- * the API; zero-distance hop route ko affect nahi karta.
- */
+
 function dedupeConsecutive(points: RoutePoint[]): RoutePoint[] {
   const result: RoutePoint[] = [];
   for (const point of points) {
@@ -34,11 +29,7 @@ function dedupeConsecutive(points: RoutePoint[]): RoutePoint[] {
   return result;
 }
 
-/**
- * Splits a route into overlapping windows so each ORS request stays under
- * the waypoint limit. Consecutive windows share their boundary point, so no
- * leg of the route is dropped: [p0..p49], [p49..p98], ...
- */
+
 function chunkRoute(points: RoutePoint[], maxWaypoints: number): RoutePoint[][] {
   if (points.length <= maxWaypoints) return [points];
 
@@ -62,7 +53,6 @@ async function fetchRouteDistanceMeters(points: RoutePoint[]): Promise<number> {
     throw new Error("ORS_API_KEY is not set");
   }
 
-  // ORS expects [lng, lat] order — opposite of how we store points
   const coordinates = points.map((p) => [p.lng, p.lat]);
 
   let lastError: Error | null = null;
@@ -76,7 +66,6 @@ async function fetchRouteDistanceMeters(points: RoutePoint[]): Promise<number> {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ coordinates }),
-        // Free tier can be slow under load — don't hang the request forever
         signal: AbortSignal.timeout(10_000),
       });
 
@@ -116,7 +105,6 @@ async function fetchRouteDistanceMeters(points: RoutePoint[]): Promise<number> {
 export const openRouteServiceProvider: DistanceProvider = {
   name: "openrouteservice",
   async calculateRouteDistanceKm(points: RoutePoint[]): Promise<DistanceResult> {
-    // Defensive sort, same contract as haversine provider
     const sorted = [...points].sort(
       (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
     );
@@ -128,18 +116,13 @@ export const openRouteServiceProvider: DistanceProvider = {
 
     try {
       let totalMeters = 0;
-      // Sequential, not Promise.all — stays comfortably under the free
-      // tier's requests-per-minute limit even for a very long route.
+
       for (const chunk of chunks) {
         totalMeters += await fetchRouteDistanceMeters(chunk);
       }
       return { distanceKm: totalMeters / 1000, providerUsed: "openrouteservice" };
     } catch (err) {
-      // A routing-API failure (no key, quota exhausted, network down,
-      // unreachable waypoint) must never block fuel reimbursement from
-      // being calculated. We fall back to haversine for the WHOLE route
-      // (not a mix of ORS + haversine legs, which would be inconsistent)
-      // and log a warning so it's visible in server logs.
+      
       console.warn(
         "OpenRouteService failed, falling back to haversine:",
         err instanceof Error ? err.message : err

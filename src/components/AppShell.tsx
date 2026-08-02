@@ -29,7 +29,6 @@ function HamburgerIcon() {
   );
 }
 
-// lg breakpoint in Tailwind is 1024px — only auto-close the sidebar below this
 const MOBILE_BREAKPOINT = 1024;
 
 export function AppShell({

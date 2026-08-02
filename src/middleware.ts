@@ -5,7 +5,7 @@ import { AUTH_COOKIE_NAME } from "@/src/lib/auth/cookies";
 const ASSOCIATE_PREFIX = "/associate";
 const BRANCH_HEAD_PREFIX = "/branch-head";
 
-// API routes jo role-gated hain — UI ke alawa direct API call bhi yahin block hoti hai
+
 const ASSOCIATE_API_PREFIX = "/api/associate";
 const BRANCH_HEAD_API_PREFIX = "/api/branch-head";
 

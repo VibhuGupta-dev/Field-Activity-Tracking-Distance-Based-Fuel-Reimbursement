@@ -1,11 +1,4 @@
-/**
- * Run with: npx tsx src/scripts/seed.ts
- * (tsx package chahiye: npm install -D tsx)
- *
- * .env.local se MONGODB_URI padhta hai. DESTRUCTIVE hai — chalne se pehle
- * Users, Leads, DaySessions, aur Activities collections poori tarah clear
- * kar deta hai. Sirf dev/demo database pe chalana.
- */
+
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
@@ -84,7 +77,7 @@ async function seed() {
   );
   console.log("Created associates:", associates.map((a) => a.email).join(", "));
 
-  // Hyderabad ke aas-paas ke coordinates — Raha Fintech Madhapur, Hyderabad mein hai
+ 
   const leadSeed = [
     { name: "Kavita Textiles", contact: "kavita.textiles@example.com", location: { lat: 17.4483, lng: 78.3915 } },
     { name: "Reddy Constructions", contact: "9876543210", location: { lat: 17.4239, lng: 78.4738 } },
@@ -96,7 +89,7 @@ async function seed() {
   const leads = await Lead.create(leadSeed);
   console.log("Created leads:", leads.map((l) => l.name).join(", "));
 
-  // Pichle 3 din ka demo activity — monthly export mein dikhane ke liye
+  
   const now = new Date();
   for (const associate of associates) {
     for (let dayOffset = 1; dayOffset <= 3; dayOffset++) {
@@ -119,13 +112,13 @@ async function seed() {
         startTimestamp,
         endLocation,
         endTimestamp,
-        totalDistanceKm: 0, // niche compute karke update karte hain
+        totalDistanceKm: 0, 
         distanceProvider: "haversine",
       });
 
       let prevTimestamp = startTimestamp;
       const activityDocs = visitedLeads.map((lead) => {
-        prevTimestamp = new Date(prevTimestamp.getTime() + 90 * 60 * 1000); // +90 min
+        prevTimestamp = new Date(prevTimestamp.getTime() + 90 * 60 * 1000); 
         return {
           daySession: daySession._id,
           associate: associate._id,

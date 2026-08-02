@@ -5,17 +5,13 @@ export type ActivityType = "in-person-meeting";
 
 export interface IActivity extends Document {
   _id: Types.ObjectId;
-  daySession: Types.ObjectId; // ref DaySession — jis din ke andar ye activity hui
-  associate: Types.ObjectId; // ref User — denormalized: daySession se hi mil jata,
-  // par direct access-control checks aur queries ke liye yahan bhi rakha
-  // (e.g. "is activity kisi aur associate ka to nahi?" — bina daySession
-  // populate kiye seedha check ho jata hai).
-  lead: Types.ObjectId; // ref Lead — kis client se milne gaye
+  daySession: Types.ObjectId; 
+  associate: Types.ObjectId; 
+  lead: Types.ObjectId; 
   type: ActivityType;
   notes: string;
   location: IGeoPoint;
-  timestamp: Date; // activity log hone ke waqt ka capture — ordering isi pe hoti hai
-
+  timestamp: Date; 
   createdAt: Date;
   updatedAt: Date;
 }

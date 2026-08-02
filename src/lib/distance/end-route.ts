@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // Edge case: "ends a day that was never started"
+   
     const openSession = await DaySession.findOne({
       associate: session.userId,
       status: "open",

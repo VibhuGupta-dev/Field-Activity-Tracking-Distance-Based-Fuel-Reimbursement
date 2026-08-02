@@ -30,8 +30,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Token httpOnly cookie mein set ho chuka hai — localStorage mein
-      // store nahi karna, sirf display ke liye user info rakh lo.
+     
       localStorage.setItem("user", JSON.stringify(data.user));
 
       if (data.user.role === "sales-associate") {

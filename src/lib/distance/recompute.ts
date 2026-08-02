@@ -18,21 +18,7 @@ interface ActivityLike {
   timestamp: Date;
 }
 
-/**
- * Builds the ordered route for a day session — Start -> Activities -> End
- * (End only if the day has already been closed) — and runs it through the
- * configured distance provider.
- *
- * Used in two places:
- *  1. POST /api/associate/activity — after logging a new visit, so the
- *     associate sees a running distance total while the day is still open.
- *  2. POST /api/associate/day/end — to compute the final, authoritative
- *     total once the end location is known.
- *
- * Rounds to 2 decimal places ("report distance in kilometres, rounded
- * sensibly") in exactly one place, so End Day and the running total during
- * the day can never disagree on rounding behaviour.
- */
+
 export async function computeDaySessionDistance(
   daySession: DaySessionLike,
   activities: ActivityLike[]

@@ -4,11 +4,7 @@ export interface CapturedLocation {
   accuracyMeters?: number;
 }
 
-/**
- * Edge case: "user denies location permission, or device cannot get a fix"
- * — dono cases yahan reject() ke through bubble up hote hain, caller
- * (page component) usse catch karke user-friendly error dikhata hai.
- */
+
 export function getCurrentLocation(): Promise<CapturedLocation> {
   return new Promise((resolve, reject) => {
     if (!("geolocation" in navigator)) {

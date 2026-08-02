@@ -26,8 +26,7 @@ const createLeadSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    // Sirf branch-head naye leads bana sakta hai — ye admin/paperwork side ka
-    // kaam hai, associate ka nahi (jo sirf existing leads visit karta hai).
+
     if (!session || session.role !== "branch-head") {
       return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
     }

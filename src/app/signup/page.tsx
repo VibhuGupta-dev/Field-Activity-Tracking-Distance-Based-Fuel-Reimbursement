@@ -22,8 +22,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Sirf tab fetch karte hain jab role sales-associate ho — branch-head
-  // signup karte waqt is list ki zaroorat hi nahi
+  
   useEffect(() => {
     if (role !== "sales-associate") return;
     fetch("/api/branch-heads")
@@ -36,8 +35,7 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    // Client-side guard: associate ko koi branch-head zaroor select karna
-    // hoga, warna wo kisi bhi team view/search mein kabhi nahi dikhega
+
     if (role === "sales-associate" && branchHeads.length > 0 && !branchHeadId) {
       setError("Select who you report to");
       return;

@@ -25,24 +25,18 @@ export function LocationPicker({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<LeafletMarker | null>(null);
-  // keeps the click/drag handlers reading the latest onChange without
-  // re-registering them (and without re-creating the map) on every render
   const onChangeRef = useRef(onChange);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // Initialise the map once, client-side only (Leaflet touches `window`)
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       const L = await import("leaflet");
 
-      // Next.js/webpack breaks Leaflet's default marker icon path resolution —
-      // point it at the CDN instead of fighting the bundler config for it.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",

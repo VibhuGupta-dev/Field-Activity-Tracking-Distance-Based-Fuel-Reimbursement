@@ -33,9 +33,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // Edge case: activity sirf tab log ho sakti hai jab din "open" ho —
-    // isse "day never started" aur "activity after day ended" dono cases
-    // automatically handle ho jaate hain.
+
     const openSession = await DaySession.findOne({
       associate: session.userId,
       status: "open",

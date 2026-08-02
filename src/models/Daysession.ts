@@ -6,28 +6,16 @@ export type DistanceProvider = "haversine" | "osrm" | "openrouteservice" | "mapb
 
 export interface IDaySession extends Document {
   _id: Types.ObjectId;
-  associate: Types.ObjectId; // ref User (role: sales-associate)
-
-  // "YYYY-MM-DD" — associate's calendar day, derived from startTimestamp.
-  // Isse midnight-crossing din bhi ek hi bucket mein group hote hain
-  // (monthly export aur "day view" dono isi field pe query karte hain,
-  // startTimestamp pe range-query karne ke bajaye).
+  associate: Types.ObjectId; 
   dateKey: string;
-
   status: DaySessionStatus;
 
   startLocation: IGeoPoint;
   startTimestamp: Date;
-
-  // End Day tak dono null rehte hain
   endLocation: IGeoPoint | null;
   endTimestamp: Date | null;
-
-  // End Day pe (ya on-demand) compute hoke cache ho jata hai — baar baar
-  // routing API call na karni pade. null jab tak day close na ho.
   totalDistanceKm: number | null;
   distanceProvider: DistanceProvider | null;
-
   createdAt: Date;
   updatedAt: Date;
 }

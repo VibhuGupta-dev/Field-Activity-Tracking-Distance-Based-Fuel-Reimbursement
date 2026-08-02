@@ -68,7 +68,6 @@ function Waypoint({
       <div className="h-5 w-5 rounded-full border-2 border-[var(--color-success)] bg-[var(--color-success)]" />
     );
   }
-  // "activity" waypoint — pulses gently if it's the most recent stop (live position feel)
   return (
     <div className="relative h-5 w-5 rounded-full border-2 border-[var(--color-accent)] bg-[var(--color-bg)]">
       {isLatest && (

@@ -69,9 +69,7 @@ export async function GET(req: NextRequest) {
 
         let totalDistanceKm: number | null = daySession?.totalDistanceKm ?? null;
 
-        // Din abhi open hai (cached distance nahi) — ab tak ke route ka
-        // live distance nikaal ke dikhate hain, jaisa associate's own view
-        // mein bhi karte hain.
+      
         if (daySession && daySession.status === "open") {
           const routePoints: RoutePoint[] = [
             {

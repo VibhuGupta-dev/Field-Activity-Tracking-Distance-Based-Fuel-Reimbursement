@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // passwordHash pe select:false hai schema mein, isliye explicitly select karo
     const user = await User.findOne({ email }).select("+passwordHash");
     if (!user) {
       return NextResponse.json(

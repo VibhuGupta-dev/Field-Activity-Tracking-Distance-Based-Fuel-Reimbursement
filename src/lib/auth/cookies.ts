@@ -5,5 +5,5 @@ export const AUTH_COOKIE_OPTIONS = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
-  maxAge: 60 * 60 * 24 * 7, // 7 din, JWT expiry ke barabar
+  maxAge: 60 * 60 * 24 * 7, 
 };

@@ -48,8 +48,7 @@ export async function GET(req: NextRequest) {
 
     let totalDistanceKm = daySession.totalDistanceKm;
 
-    // Din abhi bhi open hai — cached value nahi hai, isliye ab tak ke route
-    // ka live distance calculate karke dikhate hain (start -> activities so far).
+   
     if (daySession.status === "open") {
       const routePoints: RoutePoint[] = [
         {

@@ -38,17 +38,14 @@ export const haversineProvider: DistanceProvider = {
   async calculateRouteDistanceKm(points: RoutePoint[]): Promise<DistanceResult> {
     if (points.length < 2) return { distanceKm: 0, providerUsed: "haversine" };
 
-    // Defensive sort — caller ko already sorted bhejna chahiye, par yahan
-    // dobara ensure kar lete hain (timestamp order, insertion order nahi).
+   
     const sorted = [...points].sort(
       (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
     );
 
     let total = 0;
     for (let i = 1; i < sorted.length; i++) {
-      // Do consecutive identical points (poor GPS fix, ya turant dobara
-      // capture) ka distance 0 aata hai — koi special-case ki zaroorat
-      // nahi, formula khud hi safely 0 return karta hai.
+    
       total += haversineDistanceKm(sorted[i - 1], sorted[i]);
     }
 

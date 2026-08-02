@@ -4,7 +4,7 @@ import { GeoPointSchema, type IGeoPoint } from "./shared/GeoPoint";
 export interface ILead extends Document {
   _id: Types.ObjectId;
   name: string;
-  contact: string; // phone or email — free text, kept simple per assessment scope
+  contact: string; 
   location: IGeoPoint;
   createdAt: Date;
   updatedAt: Date;

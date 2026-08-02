@@ -38,10 +38,7 @@ export async function GET(req: NextRequest) {
 
     const teamMemberIds = teamMembers.map((m) => m._id);
 
-    // Sirf "closed" sessions count hoti hain — ye final, reliable figure hai
-    // jo HR ko fuel reimbursement ke liye di jaati hai. Ek din jo abhi bhi
-    // "open" hai (associate ne end nahi kiya) is total mein shamil nahi
-    // hota jab tak close na ho jaye. Assumption README mein documented hai.
+ 
     const daySessions = await DaySession.find({
       associate: { $in: teamMemberIds },
       dateKey: { $regex: `^${month}` },
