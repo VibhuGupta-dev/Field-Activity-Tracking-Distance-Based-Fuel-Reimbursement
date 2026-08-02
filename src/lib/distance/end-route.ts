@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/src/lib/db/connect";
 import { getSession } from "@/src/lib/auth/getSession";
 import { geoPointSchema } from "@/src/lib/validation/geoPoint";
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
+    // Edge case: "ends a day that was never started"
     const openSession = await DaySession.findOne({
       associate: session.userId,
       status: "open",
@@ -54,6 +55,8 @@ export async function POST(req: NextRequest) {
     );
 
     openSession.totalDistanceKm = totalDistanceKm;
+    // Truthful record — if ORS failed and we silently fell back, this now
+    // correctly says "haversine", not "openrouteservice".
     openSession.distanceProvider = distanceProvider;
 
     await openSession.save();

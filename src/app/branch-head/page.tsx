@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell, type NavItem } from "@/src/components/AppShell";
+import { LocationPicker } from "@/src/components/LocationPicker";
 import { StatusPill, type SessionStatus } from "@/src/components/StatusPill";
 
 interface TeamActivity {
@@ -369,6 +370,19 @@ export default function BranchHeadDashboard() {
                   onChange={(e) => setLeadContact(e.target.value)}
                   placeholder="Phone or email"
                   className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
+                  Location
+                </label>
+                <LocationPicker
+                  lat={leadLat ? parseFloat(leadLat) : null}
+                  lng={leadLng ? parseFloat(leadLng) : null}
+                  onChange={(lat, lng) => {
+                    setLeadLat(lat.toFixed(6));
+                    setLeadLng(lng.toFixed(6));
+                  }}
                 />
               </div>
               <div>

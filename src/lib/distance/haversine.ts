@@ -1,4 +1,4 @@
-import type { DistanceProvider, RoutePoint } from "./types";
+import type { DistanceProvider, DistanceResult, RoutePoint } from "./types";
 
 const EARTH_RADIUS_KM = 6371;
 
@@ -35,8 +35,8 @@ function haversineDistanceKm(
 
 export const haversineProvider: DistanceProvider = {
   name: "haversine",
-  async calculateRouteDistanceKm(points: RoutePoint[]): Promise<number> {
-    if (points.length < 2) return 0;
+  async calculateRouteDistanceKm(points: RoutePoint[]): Promise<DistanceResult> {
+    if (points.length < 2) return { distanceKm: 0, providerUsed: "haversine" };
 
     // Defensive sort — caller ko already sorted bhejna chahiye, par yahan
     // dobara ensure kar lete hain (timestamp order, insertion order nahi).
@@ -52,6 +52,6 @@ export const haversineProvider: DistanceProvider = {
       total += haversineDistanceKm(sorted[i - 1], sorted[i]);
     }
 
-    return total;
+    return { distanceKm: total, providerUsed: "haversine" };
   },
 };

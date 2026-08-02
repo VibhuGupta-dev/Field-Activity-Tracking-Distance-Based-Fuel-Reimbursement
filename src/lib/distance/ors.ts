@@ -1,7 +1,22 @@
-import type { DistanceProvider, RoutePoint } from "./types";
+import type { DistanceProvider, DistanceResult, RoutePoint } from "./types";
 import { haversineProvider } from "./haversine";
 
 const ORS_DIRECTIONS_URL = "https://api.openrouteservice.org/v2/directions/driving-car";
+
+// ORS free tier caps coordinates per request. Kept conservative — if an
+// associate logs many activities in one day, we split the route into
+// overlapping chunks instead of failing (or silently losing accuracy).
+const MAX_WAYPOINTS_PER_REQUEST = 50;
+
+// Only retry on transient failures (network blip, 5xx, rate limit) — a bad
+// API key or malformed request will fail the same way every time, so we
+// don't waste time retrying those.
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * Edge case: "two consecutive points are identical" — ORS rejects duplicate
@@ -19,6 +34,28 @@ function dedupeConsecutive(points: RoutePoint[]): RoutePoint[] {
   return result;
 }
 
+/**
+ * Splits a route into overlapping windows so each ORS request stays under
+ * the waypoint limit. Consecutive windows share their boundary point, so no
+ * leg of the route is dropped: [p0..p49], [p49..p98], ...
+ */
+function chunkRoute(points: RoutePoint[], maxWaypoints: number): RoutePoint[][] {
+  if (points.length <= maxWaypoints) return [points];
+
+  const chunks: RoutePoint[][] = [];
+  let start = 0;
+  while (start < points.length - 1) {
+    const end = Math.min(start + maxWaypoints - 1, points.length - 1);
+    chunks.push(points.slice(start, end + 1));
+    start = end;
+  }
+  return chunks;
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
 async function fetchRouteDistanceMeters(points: RoutePoint[]): Promise<number> {
   const apiKey = process.env.ORS_API_KEY;
   if (!apiKey) {
@@ -28,51 +65,81 @@ async function fetchRouteDistanceMeters(points: RoutePoint[]): Promise<number> {
   // ORS expects [lng, lat] order — opposite of how we store points
   const coordinates = points.map((p) => [p.lng, p.lat]);
 
-  const res = await fetch(ORS_DIRECTIONS_URL, {
-    method: "POST",
-    headers: {
-      Authorization: apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ coordinates }),
-    // Free tier can be slow under load — don't hang the request forever
-    signal: AbortSignal.timeout(10_000),
-  });
+  let lastError: Error | null = null;
 
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => "");
-    throw new Error(`ORS request failed (${res.status}): ${errorText}`);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(ORS_DIRECTIONS_URL, {
+        method: "POST",
+        headers: {
+          Authorization: apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ coordinates }),
+        // Free tier can be slow under load — don't hang the request forever
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "");
+        const error = new Error(`ORS request failed (${res.status}): ${errorText}`);
+        if (isRetryableStatus(res.status) && attempt < MAX_RETRIES) {
+          lastError = error;
+          await sleep(RETRY_DELAY_MS * (attempt + 1));
+          continue;
+        }
+        throw error;
+      }
+
+      const data = await res.json();
+      const distanceMeters = data?.routes?.[0]?.summary?.distance;
+
+      if (typeof distanceMeters !== "number") {
+        throw new Error("ORS response missing route distance");
+      }
+
+      return distanceMeters;
+    } catch (err) {
+      // Network-level failure (timeout, DNS, connection reset) — also
+      // worth a retry, unlike a bad API key which throws synchronously above.
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < MAX_RETRIES) {
+        await sleep(RETRY_DELAY_MS * (attempt + 1));
+        continue;
+      }
+    }
   }
 
-  const data = await res.json();
-  const distanceMeters = data?.routes?.[0]?.summary?.distance;
-
-  if (typeof distanceMeters !== "number") {
-    throw new Error("ORS response missing route distance");
-  }
-
-  return distanceMeters;
+  throw lastError ?? new Error("ORS request failed for an unknown reason");
 }
 
 export const openRouteServiceProvider: DistanceProvider = {
   name: "openrouteservice",
-  async calculateRouteDistanceKm(points: RoutePoint[]): Promise<number> {
-    // Defensive sort — same contract as haversine provider
+  async calculateRouteDistanceKm(points: RoutePoint[]): Promise<DistanceResult> {
+    // Defensive sort, same contract as haversine provider
     const sorted = [...points].sort(
       (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
     );
 
     const deduped = dedupeConsecutive(sorted);
-    if (deduped.length < 2) return 0;
+    if (deduped.length < 2) return { distanceKm: 0, providerUsed: "openrouteservice" };
+
+    const chunks = chunkRoute(deduped, MAX_WAYPOINTS_PER_REQUEST);
 
     try {
-      const meters = await fetchRouteDistanceMeters(deduped);
-      return meters / 1000;
+      let totalMeters = 0;
+      // Sequential, not Promise.all — stays comfortably under the free
+      // tier's requests-per-minute limit even for a very long route.
+      for (const chunk of chunks) {
+        totalMeters += await fetchRouteDistanceMeters(chunk);
+      }
+      return { distanceKm: totalMeters / 1000, providerUsed: "openrouteservice" };
     } catch (err) {
-      // A routing-API failure (no key, quota exhausted, network blip,
+      // A routing-API failure (no key, quota exhausted, network down,
       // unreachable waypoint) must never block fuel reimbursement from
-      // being calculated. We fall back to haversine and log a warning so
-      // it's visible in server logs, but the request still succeeds.
+      // being calculated. We fall back to haversine for the WHOLE route
+      // (not a mix of ORS + haversine legs, which would be inconsistent)
+      // and log a warning so it's visible in server logs.
       console.warn(
         "OpenRouteService failed, falling back to haversine:",
         err instanceof Error ? err.message : err
