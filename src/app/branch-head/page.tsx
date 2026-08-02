@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell, type NavItem } from "@/src/components/AppShell";
 import { LocationPicker } from "@/src/components/LocationPicker";
@@ -66,27 +66,37 @@ export default function BranchHeadDashboard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const loadTeam = useCallback(async (forDate: string) => {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/branch-head/team?date=${forDate}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || "Could not load team activity");
-        return;
-      }
-      setTeam(data.team);
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    loadTeam(date);
-  }, [date, loadTeam]);
+    let active = true;
+
+    const loadTeam = async () => {
+      setError("");
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/branch-head/team?date=${date}`);
+        const data = await res.json();
+        if (!active) return;
+        if (!res.ok) {
+          setError(data.message || "Could not load team activity");
+          return;
+        }
+        setTeam(data.team);
+      } catch {
+        if (!active) return;
+        setError("Something went wrong. Please try again.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadTeam();
+
+    return () => {
+      active = false;
+    };
+  }, [date]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();

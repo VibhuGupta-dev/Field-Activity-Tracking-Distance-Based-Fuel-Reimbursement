@@ -68,17 +68,43 @@ export default function AssociateDashboard() {
     setActivities(data.activities);
   }, []);
 
-  const loadLeads = useCallback(async () => {
-    const res = await fetch("/api/leads");
-    if (!res.ok) return;
-    const data = await res.json();
-    setLeads(data.leads);
-  }, []);
-
   useEffect(() => {
-    loadDay();
-    loadLeads();
-  }, [loadDay, loadLeads]);
+    let active = true;
+
+    const initializeDashboard = async () => {
+      try {
+        const [dayRes, leadsRes] = await Promise.all([
+          fetch("/api/associate/day"),
+          fetch("/api/leads"),
+        ]);
+
+        if (!active) return;
+
+        if (dayRes.status === 404) {
+          setDaySession(null);
+          setActivities([]);
+        } else if (dayRes.ok) {
+          const dayData = await dayRes.json();
+          setDaySession(dayData.daySession);
+          setActivities(dayData.activities);
+        }
+
+        if (leadsRes.ok) {
+          const leadsData = await leadsRes.json();
+          setLeads(leadsData.leads);
+        }
+      } catch {
+        if (!active) return;
+        setError("Something went wrong. Please try again.");
+      }
+    };
+
+    void initializeDashboard();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const withLocation = async (
     action: (location: Awaited<ReturnType<typeof getCurrentLocation>>) => Promise<void>
