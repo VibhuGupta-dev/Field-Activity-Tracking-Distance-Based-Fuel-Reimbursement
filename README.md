@@ -92,6 +92,12 @@ The seed script creates:
 - 5 leads
 - several historical day sessions and activities for demo purposes
 
+The seeded users are:
+
+- Branch Head: branchhead@gmail.com / pass -162216
+- Sales Associates: sales1@gmail.com, sales2@gmail.com, sales3@gmail.com
+  - All sales accounts use the same password: pass -162216
+
 Run:
 
 ```bash
@@ -100,8 +106,11 @@ npx tsx src/scripts/seed.ts
 
 Default demo credentials:
 
-- Branch Head: branchhead1@raha.com / password123
-- Associate: associate1@raha.com / password123
+- Branch Head: branchhead@gmail.com / pass -162216
+- Sales Associates:
+  - sales1@gmail.com / pass -162216
+  - sales2@gmail.com / pass -162216
+  - sales3@gmail.com / pass -162216
 
 ## Data Model
 
