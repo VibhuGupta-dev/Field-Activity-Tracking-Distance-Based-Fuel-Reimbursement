@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentLocation } from "@/src/lib/client/geolocation";
-import { AppShell } from "@/src/components/AppShell";
+import { AppShell, type NavItem } from "@/src/components/AppShell";
 import { RouteTimeline, type RoutePointView } from "@/src/components/RouteTimeline";
 import { StatusPill } from "@/src/components/StatusPill";
 
@@ -29,6 +29,12 @@ interface DaySessionView {
   totalDistanceKm: number | null;
 }
 
+const NAV_ITEMS: NavItem[] = [
+  { id: "today", label: "Today" },
+  { id: "log", label: "Log Visit" },
+  { id: "history", label: "Visit Log" },
+];
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
@@ -39,6 +45,7 @@ function leadName(lead: ActivityItem["lead"]): string {
 
 export default function AssociateDashboard() {
   const router = useRouter();
+  const [section, setSection] = useState("today");
   const [daySession, setDaySession] = useState<DaySessionView | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -178,140 +185,166 @@ export default function AssociateDashboard() {
     : [];
 
   return (
-    <AppShell eyebrow="Field Log" onLogout={handleLogout}>
-      <p className="text-[13px] text-[var(--color-text-muted)]">{today}</p>
-      <h1 className="mt-1 font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
-        Your day
-      </h1>
-
+    <AppShell
+      eyebrow="Field Log"
+      navItems={NAV_ITEMS}
+      activeSection={section}
+      onSectionChange={setSection}
+      onLogout={handleLogout}
+    >
       {error && (
-        <p className="mt-4 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-2.5 text-[13px] text-[var(--color-danger)]">
+        <p className="mb-4 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-2.5 text-[13px] text-[var(--color-danger)]">
           {error}
         </p>
       )}
       {message && (
-        <p className="mt-4 rounded-lg border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-4 py-2.5 text-[13px] text-[var(--color-success)]">
+        <p className="mb-4 rounded-lg border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-4 py-2.5 text-[13px] text-[var(--color-success)]">
           {message}
         </p>
       )}
 
-      {/* Status + route */}
-      <section className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        {!daySession ? (
-          <div className="flex flex-col items-start gap-4">
-            <div>
-              <p className="text-[14px] font-medium text-[var(--color-text)]">
-                No visits logged yet today
-              </p>
-              <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">
-                Start your day to begin tracking your route.
-              </p>
-            </div>
-            <button
-              onClick={handleStartDay}
-              disabled={busy}
-              className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-[14px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
-            >
-              {busy ? "Starting…" : "Start day"}
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <StatusPill status={daySession.status} />
-              {isOpen && (
+      {/* ---------------- TODAY ---------------- */}
+      {section === "today" && (
+        <>
+          <p className="text-[13px] text-[var(--color-text-muted)]">{today}</p>
+          <h1 className="mt-1 font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
+            Your day
+          </h1>
+
+          <section className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            {!daySession ? (
+              <div className="flex flex-col items-start gap-4">
+                <div>
+                  <p className="text-[14px] font-medium text-[var(--color-text)]">
+                    No visits logged yet today
+                  </p>
+                  <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">
+                    Start your day to begin tracking your route.
+                  </p>
+                </div>
                 <button
-                  onClick={handleEndDay}
+                  onClick={handleStartDay}
                   disabled={busy}
-                  className="rounded-full border border-[var(--color-border)] px-5 py-2 text-[13px] font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+                  className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-[14px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
                 >
-                  {busy ? "Ending…" : "End day"}
+                  {busy ? "Starting…" : "Start day"}
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <StatusPill status={daySession.status} />
+                  {isOpen && (
+                    <button
+                      onClick={handleEndDay}
+                      disabled={busy}
+                      className="rounded-full border border-[var(--color-border)] px-5 py-2 text-[13px] font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+                    >
+                      {busy ? "Ending…" : "End day"}
+                    </button>
+                  )}
+                </div>
 
-            <div className="mt-6">
-              <RouteTimeline points={routePoints} distanceKm={daySession.totalDistanceKm} />
-            </div>
-          </>
-        )}
-      </section>
-
-      {/* Log a visit — only while day is open */}
-      {isOpen && (
-        <section className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-            Log a visit
-          </h2>
-
-          <form onSubmit={handleAddActivity} className="mt-4 space-y-4">
-            <div>
-              <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
-                Lead
-              </label>
-              <select
-                value={selectedLeadId}
-                onChange={(e) => setSelectedLeadId(e.target.value)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-[14px] text-[var(--color-text)] outline-none transition focus:border-[var(--color-accent)] [&>option]:bg-[var(--color-surface-raised)]"
-              >
-                <option value="">Select a lead</option>
-                {leads.map((lead) => (
-                  <option key={lead._id} value={lead._id}>
-                    {lead.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
-                Meeting notes
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                placeholder="What was discussed…"
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-[14px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
-            >
-              {busy ? "Logging…" : "Log visit"}
-            </button>
-          </form>
-        </section>
+                <div className="mt-6">
+                  <RouteTimeline points={routePoints} distanceKm={daySession.totalDistanceKm} />
+                </div>
+              </>
+            )}
+          </section>
+        </>
       )}
 
-      {/* Visit log */}
-      {activities.length > 0 && (
-        <section className="mt-6">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-            Visit log
-          </h2>
-          <ul className="mt-3 space-y-2.5">
-            {activities.map((activity) => (
-              <li
-                key={activity._id}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[13.5px] font-medium text-[var(--color-text)]">
-                    {leadName(activity.lead)}
-                  </span>
-                  <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-[var(--color-text-muted)]">
-                    {formatTime(activity.timestamp)}
-                  </span>
+      {/* ---------------- LOG VISIT ---------------- */}
+      {section === "log" && (
+        <>
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
+            Log a visit
+          </h1>
+
+          {!isOpen ? (
+            <p className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-[13.5px] text-[var(--color-text-muted)]">
+              Start your day from the <span className="text-[var(--color-text)]">Today</span> tab before
+              logging a visit.
+            </p>
+          ) : (
+            <section className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+              <form onSubmit={handleAddActivity} className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
+                    Lead
+                  </label>
+                  <select
+                    value={selectedLeadId}
+                    onChange={(e) => setSelectedLeadId(e.target.value)}
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-[14px] text-[var(--color-text)] outline-none transition focus:border-[var(--color-accent)] [&>option]:bg-[var(--color-surface-raised)]"
+                  >
+                    <option value="">Select a lead</option>
+                    {leads.map((lead) => (
+                      <option key={lead._id} value={lead._id}>
+                        {lead.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">{activity.notes}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+
+                <div>
+                  <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
+                    Meeting notes
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    placeholder="What was discussed…"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-[14px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
+                >
+                  {busy ? "Logging…" : "Log visit"}
+                </button>
+              </form>
+            </section>
+          )}
+        </>
+      )}
+
+      {/* ---------------- VISIT LOG ---------------- */}
+      {section === "history" && (
+        <>
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
+            Visit log
+          </h1>
+
+          {activities.length === 0 ? (
+            <p className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-[13.5px] text-[var(--color-text-muted)]">
+              No visits logged yet today.
+            </p>
+          ) : (
+            <ul className="mt-6 space-y-2.5">
+              {activities.map((activity) => (
+                <li
+                  key={activity._id}
+                  className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13.5px] font-medium text-[var(--color-text)]">
+                      {leadName(activity.lead)}
+                    </span>
+                    <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-[var(--color-text-muted)]">
+                      {formatTime(activity.timestamp)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">{activity.notes}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </AppShell>
   );

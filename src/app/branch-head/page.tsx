@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/src/components/AppShell";
+import { AppShell, type NavItem } from "@/src/components/AppShell";
 import { StatusPill, type SessionStatus } from "@/src/components/StatusPill";
 
 interface TeamActivity {
@@ -36,12 +36,20 @@ interface SearchResultAssociate {
   history: SearchResultDaySession[];
 }
 
+const NAV_ITEMS: NavItem[] = [
+  { id: "team", label: "Team" },
+  { id: "search", label: "Find Associate" },
+  { id: "export", label: "Export" },
+  { id: "addLead", label: "Add Lead" },
+];
+
 function todayDateKey(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
 }
 
 export default function BranchHeadDashboard() {
   const router = useRouter();
+  const [section, setSection] = useState("team");
   const [date, setDate] = useState(todayDateKey());
   const [leadName, setLeadName] = useState("");
   const [leadContact, setLeadContact] = useState("");
@@ -156,232 +164,252 @@ export default function BranchHeadDashboard() {
   });
 
   return (
-    <AppShell eyebrow="Team Ledger" onLogout={handleLogout}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[13px] text-[var(--color-text-muted)]">Reviewing</p>
-          <h1 className="mt-1 font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
-            {dateLabel}
-          </h1>
-        </div>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          style={{ colorScheme: "dark" }}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[13px] text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
-        />
-      </div>
-
+    <AppShell
+      eyebrow="Team Ledger"
+      navItems={NAV_ITEMS}
+      activeSection={section}
+      onSectionChange={setSection}
+      onLogout={handleLogout}
+    >
       {error && (
-        <p className="mt-4 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-2.5 text-[13px] text-[var(--color-danger)]">
+        <p className="mb-4 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-2.5 text-[13px] text-[var(--color-danger)]">
           {error}
         </p>
       )}
 
-      {/* Manifest */}
-      <section className="mt-6 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-[var(--color-border)] px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-          <span>Associate</span>
-          <span>Status</span>
-          <span className="text-right">Distance</span>
-          <span className="text-right">Visits</span>
-        </div>
-        {team.map((member) => (
-          <div
-            key={member.associateId}
-            className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 border-b border-[var(--color-border)] px-5 py-3.5 text-[13.5px] last:border-b-0 hover:bg-[var(--color-surface-raised)]"
-          >
+      {/* ---------------- TEAM ---------------- */}
+      {section === "team" && (
+        <>
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="font-medium text-[var(--color-text)]">{member.associateName}</p>
-              <p className="text-[11.5px] text-[var(--color-text-muted)]">{member.associateEmail}</p>
+              <p className="text-[13px] text-[var(--color-text-muted)]">Reviewing</p>
+              <h1 className="mt-1 font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
+                {dateLabel}
+              </h1>
             </div>
-            <StatusPill status={member.status} />
-            <span className="text-right font-[family-name:var(--font-mono)] text-[13.5px]">
-              {member.totalDistanceKm !== null ? `${member.totalDistanceKm} km` : "—"}
-            </span>
-            <span className="text-right font-[family-name:var(--font-mono)] text-[13.5px] text-[var(--color-text-muted)]">
-              {member.activities.length}
-            </span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              style={{ colorScheme: "dark" }}
+              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[13px] text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+            />
           </div>
-        ))}
-        {team.length === 0 && !loading && (
-          <p className="px-5 py-8 text-center text-[13px] text-[var(--color-text-muted)]">
-            No associates assigned to you yet.
-          </p>
-        )}
-      </section>
 
-      {/* Search */}
-      <section className="mt-10">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-          Find associate
-        </h2>
-        <form onSubmit={handleSearch} className="mt-3 flex gap-3">
-          <input
-            type="text"
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-            placeholder="Associate name"
-            className="w-full max-w-xs rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
-          />
-          <button
-            type="submit"
-            className="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-[13px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-          >
-            Search
-          </button>
-        </form>
-
-        {searchResults && (
-          <div className="mt-4 space-y-3">
-            {searchResults.length === 0 && (
-              <p className="text-[13px] text-[var(--color-text-muted)]">
-                No associate matches &ldquo;{searchName}&rdquo;.
-              </p>
-            )}
-            {searchResults.map((associate) => (
+          <section className="mt-6 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-[var(--color-border)] px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
+              <span>Associate</span>
+              <span>Status</span>
+              <span className="text-right">Distance</span>
+              <span className="text-right">Visits</span>
+            </div>
+            {team.map((member) => (
               <div
-                key={associate.associateId}
-                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+                key={member.associateId}
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 border-b border-[var(--color-border)] px-5 py-3.5 text-[13.5px] last:border-b-0 hover:bg-[var(--color-surface-raised)]"
               >
-                <p className="text-[14px] font-medium text-[var(--color-text)]">
-                  {associate.associateName}
-                </p>
-                <p className="text-[12px] text-[var(--color-text-muted)]">
-                  {associate.associateEmail}
-                </p>
-                <ul className="mt-3 divide-y divide-[var(--color-border)]">
-                  {associate.history.map((day) => (
-                    <li key={day.id} className="flex justify-between py-2 text-[13px]">
-                      <span className="text-[var(--color-text-muted)]">{day.dateKey}</span>
-                      <span className="font-[family-name:var(--font-mono)]">
-                        {day.totalDistanceKm !== null ? `${day.totalDistanceKm} km` : "—"}
-                        <span className="ml-2 text-[var(--color-text-muted)]">
-                          {day.activityCount} visits
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                  {associate.history.length === 0 && (
-                    <p className="py-2 text-[13px] text-[var(--color-text-muted)]">
-                      No history yet.
-                    </p>
-                  )}
-                </ul>
+                <div>
+                  <p className="font-medium text-[var(--color-text)]">{member.associateName}</p>
+                  <p className="text-[11.5px] text-[var(--color-text-muted)]">{member.associateEmail}</p>
+                </div>
+                <StatusPill status={member.status} />
+                <span className="text-right font-[family-name:var(--font-mono)] text-[13.5px]">
+                  {member.totalDistanceKm !== null ? `${member.totalDistanceKm} km` : "—"}
+                </span>
+                <span className="text-right font-[family-name:var(--font-mono)] text-[13.5px] text-[var(--color-text-muted)]">
+                  {member.activities.length}
+                </span>
               </div>
             ))}
-          </div>
-        )}
-      </section>
+            {team.length === 0 && !loading && (
+              <p className="px-5 py-8 text-center text-[13px] text-[var(--color-text-muted)]">
+                No associates assigned to you yet.
+              </p>
+            )}
+          </section>
+        </>
+      )}
 
-      {/* Monthly export */}
-      <section className="mt-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-          Monthly reimbursement export
-        </h2>
-        <p className="mt-2 text-[13px] text-[var(--color-text-muted)]">
-          Download each associate&apos;s total distance for HR fuel reimbursement.
-        </p>
-        <div className="mt-4 flex items-center gap-3">
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            style={{ colorScheme: "dark" }}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-[13px] text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
-          />
-          <a
-            href={`/api/branch-head/export?month=${month}`}
-            className="rounded-full border border-[var(--color-accent)] px-5 py-2 text-[13px] font-medium text-[var(--color-accent)] transition hover:bg-[var(--color-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-          >
-            Download CSV
-          </a>
-        </div>
-      </section>
-
-      {/* Add lead */}
-      <section className="mt-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-          Add a lead
-        </h2>
-        <p className="mt-2 text-[13px] text-[var(--color-text-muted)]">
-          New clients your associates can log visits against.
-        </p>
-
-        {leadError && (
-          <p className="mt-3 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-2.5 text-[13px] text-[var(--color-danger)]">
-            {leadError}
-          </p>
-        )}
-        {leadMessage && (
-          <p className="mt-3 rounded-lg border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-4 py-2.5 text-[13px] text-[var(--color-success)]">
-            {leadMessage}
-          </p>
-        )}
-
-        <form onSubmit={handleAddLead} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
-              Lead name
-            </label>
+      {/* ---------------- FIND ASSOCIATE ---------------- */}
+      {section === "search" && (
+        <>
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
+            Find associate
+          </h1>
+          <form onSubmit={handleSearch} className="mt-6 flex gap-3">
             <input
               type="text"
-              value={leadName}
-              onChange={(e) => setLeadName(e.target.value)}
-              placeholder="Kavita Textiles"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              placeholder="Associate name"
+              className="w-full max-w-xs rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
             />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
-              Contact
-            </label>
-            <input
-              type="text"
-              value={leadContact}
-              onChange={(e) => setLeadContact(e.target.value)}
-              placeholder="Phone or email"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
-              Latitude
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={leadLat}
-              onChange={(e) => setLeadLat(e.target.value)}
-              placeholder="17.4483"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 font-[family-name:var(--font-mono)] text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
-              Longitude
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={leadLng}
-              onChange={(e) => setLeadLng(e.target.value)}
-              placeholder="78.3915"
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 font-[family-name:var(--font-mono)] text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
-            />
-          </div>
-          <div className="sm:col-span-2">
             <button
               type="submit"
-              disabled={leadSaving}
-              className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-[14px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
+              className="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-[13px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
             >
-              {leadSaving ? "Adding…" : "Add lead"}
+              Search
             </button>
-          </div>
-        </form>
-      </section>
+          </form>
+
+          {searchResults && (
+            <div className="mt-4 space-y-3">
+              {searchResults.length === 0 && (
+                <p className="text-[13px] text-[var(--color-text-muted)]">
+                  No associate matches &ldquo;{searchName}&rdquo;.
+                </p>
+              )}
+              {searchResults.map((associate) => (
+                <div
+                  key={associate.associateId}
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+                >
+                  <p className="text-[14px] font-medium text-[var(--color-text)]">
+                    {associate.associateName}
+                  </p>
+                  <p className="text-[12px] text-[var(--color-text-muted)]">
+                    {associate.associateEmail}
+                  </p>
+                  <ul className="mt-3 divide-y divide-[var(--color-border)]">
+                    {associate.history.map((day) => (
+                      <li key={day.id} className="flex justify-between py-2 text-[13px]">
+                        <span className="text-[var(--color-text-muted)]">{day.dateKey}</span>
+                        <span className="font-[family-name:var(--font-mono)]">
+                          {day.totalDistanceKm !== null ? `${day.totalDistanceKm} km` : "—"}
+                          <span className="ml-2 text-[var(--color-text-muted)]">
+                            {day.activityCount} visits
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                    {associate.history.length === 0 && (
+                      <p className="py-2 text-[13px] text-[var(--color-text-muted)]">
+                        No history yet.
+                      </p>
+                    )}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ---------------- EXPORT ---------------- */}
+      {section === "export" && (
+        <>
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
+            Monthly reimbursement export
+          </h1>
+          <section className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <p className="text-[13px] text-[var(--color-text-muted)]">
+              Download each associate&apos;s total distance for HR fuel reimbursement.
+            </p>
+            <div className="mt-4 flex items-center gap-3">
+              <input
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                style={{ colorScheme: "dark" }}
+                className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 text-[13px] text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+              />
+              <a
+                href={`/api/branch-head/export?month=${month}`}
+                className="rounded-full border border-[var(--color-accent)] px-5 py-2 text-[13px] font-medium text-[var(--color-accent)] transition hover:bg-[var(--color-accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+              >
+                Download CSV
+              </a>
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* ---------------- ADD LEAD ---------------- */}
+      {section === "addLead" && (
+        <>
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-medium tracking-tight">
+            Add a lead
+          </h1>
+          <section className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <p className="text-[13px] text-[var(--color-text-muted)]">
+              New clients your associates can log visits against.
+            </p>
+
+            {leadError && (
+              <p className="mt-3 rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-2.5 text-[13px] text-[var(--color-danger)]">
+                {leadError}
+              </p>
+            )}
+            {leadMessage && (
+              <p className="mt-3 rounded-lg border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-4 py-2.5 text-[13px] text-[var(--color-success)]">
+                {leadMessage}
+              </p>
+            )}
+
+            <form onSubmit={handleAddLead} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
+                  Lead name
+                </label>
+                <input
+                  type="text"
+                  value={leadName}
+                  onChange={(e) => setLeadName(e.target.value)}
+                  placeholder="Kavita Textiles"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
+                  Contact
+                </label>
+                <input
+                  type="text"
+                  value={leadContact}
+                  onChange={(e) => setLeadContact(e.target.value)}
+                  placeholder="Phone or email"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
+                  Latitude
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={leadLat}
+                  onChange={(e) => setLeadLat(e.target.value)}
+                  placeholder="17.4483"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 font-[family-name:var(--font-mono)] text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-medium text-[var(--color-text-muted)]">
+                  Longitude
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={leadLng}
+                  onChange={(e) => setLeadLng(e.target.value)}
+                  placeholder="78.3915"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 font-[family-name:var(--font-mono)] text-[14px] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-accent)]"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <button
+                  type="submit"
+                  disabled={leadSaving}
+                  className="rounded-full bg-[var(--color-accent)] px-6 py-2.5 text-[14px] font-semibold text-[var(--color-bg)] transition hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)]"
+                >
+                  {leadSaving ? "Adding…" : "Add lead"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </>
+      )}
     </AppShell>
   );
 }
