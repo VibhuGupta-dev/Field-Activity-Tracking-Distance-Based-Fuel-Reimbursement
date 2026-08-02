@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const parsed = startDaySchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { message: parsed.error.errors[0]?.message ?? "Invalid location" },
+        { message: parsed.error.issues[0]?.message ?? "Invalid location" },
         { status: 400 }
       );
     }

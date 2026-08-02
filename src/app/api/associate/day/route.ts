@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
 
       const distanceProvider = getDistanceProvider();
       const rawDistanceKm = await distanceProvider.calculateRouteDistanceKm(routePoints);
-      totalDistanceKm = Math.round(rawDistanceKm * 100) / 100;
+      totalDistanceKm = Math.round(rawDistanceKm.distanceKm * 100) / 100;
     }
 
     return NextResponse.json(
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(
-        { message: err.errors[0]?.message ?? "Invalid date" },
+        { message: err.issues[0]?.message ?? "Invalid date" },
         { status: 400 }
       );
     }

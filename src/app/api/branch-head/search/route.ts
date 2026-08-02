@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     });
     if (!parsed.success) {
       return NextResponse.json(
-        { message: parsed.error.errors[0]?.message ?? "Invalid query" },
+        { message: parsed.error.issues[0]?.message ?? "Invalid query" },
         { status: 400 }
       );
     }

@@ -28,7 +28,10 @@ export function LocationPicker({
   // keeps the click/drag handlers reading the latest onChange without
   // re-registering them (and without re-creating the map) on every render
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // Initialise the map once, client-side only (Leaflet touches `window`)
   useEffect(() => {

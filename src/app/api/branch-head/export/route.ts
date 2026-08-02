@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const parsedMonth = monthSchema.safeParse(monthParam);
     if (!parsedMonth.success) {
       return NextResponse.json(
-        { message: parsedMonth.error.errors[0]?.message ?? "Invalid month" },
+        { message: parsedMonth.error.issues[0]?.message ?? "Invalid month" },
         { status: 400 }
       );
     }
